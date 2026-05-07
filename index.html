@@ -369,10 +369,12 @@
                     </div>
                     <div class="flex flex-col">
                         <label for="monthly-payment-date" class="font-semibold text-slate-500 text-xs uppercase mb-1.5 ml-1">Dia do Vencimento</label>
-                        <select id="monthly-payment-date" name="monthly-payment-date" class="modern-input px-4 py-3 rounded-xl js-required text-slate-800 font-medium outline-none cursor-pointer">
+                        <select id="monthly-payment-date" name="monthly-payment-date" class="modern-input px-4 py-3 rounded-xl js-required text-slate-800 font-medium outline-none" disabled style="background-color: #f1f5f9; opacity: 0.9;">
                             <option value="">Selecione o dia</option>
                             <option value="10">Todo dia 10</option>
+                            <option value="20">Todo dia 20</option>
                             <option value="25">Todo dia 25</option>
+                            <option value="30">Todo dia 30</option>
                         </select>
                     </div>
                     <div class="flex flex-col">
@@ -542,11 +544,37 @@
             dateInput.value = value;
         }
 
+        // Função para calcular o dia e mês do 1º pagamento baseado na data da venda
+        function getFirstPaymentDue(saleDate) {
+            const day = saleDate.getDate();
+            const month = saleDate.getMonth();
+            const year = saleDate.getFullYear();
+
+            if (day >= 1 && day <= 10) {
+                // Vence dia 30 do mês atual
+                const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                const vencDay = Math.min(30, lastDayOfMonth);
+                return new Date(year, month, vencDay);
+            } else if (day >= 11 && day <= 20) {
+                // Vence dia 10 do próximo mês
+                const nextMonth = month + 1;
+                const nextYear = nextMonth > 11 ? year + 1 : year;
+                const adjustedMonth = nextMonth > 11 ? 0 : nextMonth;
+                return new Date(nextYear, adjustedMonth, 10);
+            } else {
+                // dia 21 ao 31 → vence dia 20 do próximo mês
+                const nextMonth = month + 1;
+                const nextYear = nextMonth > 11 ? year + 1 : year;
+                const adjustedMonth = nextMonth > 11 ? 0 : nextMonth;
+                return new Date(nextYear, adjustedMonth, 20);
+            }
+        }
+
         // Função para atualizar as opções de Data do 1º Pagamento baseado no dia
         function updateFirstPaymentOptions() {
             const dateInputVal = document.getElementById('date') ? document.getElementById('date').value : '';
             let baseDate = new Date(); // Usa hoje como padrão
-            
+
             // Se o usuário preencheu uma data válida no campo "Data da Compra", usa essa data como base
             if (dateInputVal && dateInputVal.length === 10) {
                 const parts = dateInputVal.split('/');
@@ -561,46 +589,58 @@
                 }
             }
 
-            const day = baseDate.getDate();
-            const currentMonth = baseDate.getMonth();
-            const currentYear = baseDate.getFullYear();
-            
-            let nextMonth = currentMonth + 1;
-            let nextYear = currentYear;
-            if (nextMonth > 11) {
-                nextMonth = 0;
-                nextYear++;
-            }
-
-            const formatD = (d, m, y) => {
-                return String(d).padStart(2, '0') + '/' + String(m + 1).padStart(2, '0') + '/' + y;
+            const formatD = (dateObj) => {
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const yyyy = dateObj.getFullYear();
+                return `${dd}/${mm}/${yyyy}`;
             };
+
+            // Calcula a data de vencimento conforme a lógica de negócio
+            const dueDate = getFirstPaymentDue(baseDate);
 
             const select = document.getElementById('first-payment-date');
             if (!select) return;
-            
+
+            const monthlySelect = document.getElementById('monthly-payment-date');
+
             const currentVal = select.value;
             select.innerHTML = '<option value="">Selecione a data</option>';
 
-            let options = [];
+            const formattedDue = formatD(dueDate);
+            const optionEl = document.createElement('option');
+            optionEl.value = formattedDue;
+            optionEl.textContent = formattedDue;
+            select.appendChild(optionEl);
+            select.value = formattedDue;
 
-            if (day >= 1 && day <= 4) {
-                options.push({ text: formatD(10, currentMonth, currentYear), val: formatD(10, currentMonth, currentYear) });
-                options.push({ text: formatD(25, currentMonth, currentYear) + " (pedir autorização do Dark)", val: formatD(25, currentMonth, currentYear) + " (pedir autorização do Dark)" });
-            } else if (day >= 5 && day <= 19) {
-                options.push({ text: formatD(25, currentMonth, currentYear), val: formatD(25, currentMonth, currentYear) });
-                options.push({ text: formatD(10, nextMonth, nextYear) + " (pedir autorização do Dark)", val: formatD(10, nextMonth, nextYear) + " (pedir autorização do Dark)" });
-            } else if (day >= 20 && day <= 31) {
-                options.push({ text: formatD(10, nextMonth, nextYear), val: formatD(10, nextMonth, nextYear) });
-                options.push({ text: formatD(25, nextMonth, nextYear) + " (pedir autorização do Dark)", val: formatD(25, nextMonth, nextYear) + " (pedir autorização do Dark)" });
+            // Define automaticamente o Dia do Vencimento baseado na lógica
+            if (monthlySelect) {
+                const saleDay = baseDate.getDate();
+                let dueDay = '';
+                if (saleDay >= 1 && saleDay <= 10) {
+                    dueDay = '30';
+                } else if (saleDay >= 11 && saleDay <= 20) {
+                    dueDay = '10';
+                } else {
+                    dueDay = '20';
+                }
+                // Se o dia do vencimento não existe nas opções, adiciona
+                let exists = false;
+                for (let i = 0; i < monthlySelect.options.length; i++) {
+                    if (monthlySelect.options[i].value === dueDay) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists && dueDay) {
+                    const opt = document.createElement('option');
+                    opt.value = dueDay;
+                    opt.textContent = `Todo dia ${dueDay}`;
+                    monthlySelect.appendChild(opt);
+                }
+                monthlySelect.value = dueDay;
             }
-
-            options.forEach(opt => {
-                const optionEl = document.createElement('option');
-                optionEl.value = opt.val;
-                optionEl.textContent = opt.text;
-                select.appendChild(optionEl);
-            });
 
             // Restaura o valor selecionado caso ainda seja uma opção válida
             if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
@@ -833,30 +873,13 @@
             });
         });
 
-        // Ocultar "(pedir autorização do Dark)" na hora da impressão
-        window.addEventListener('beforeprint', () => {
-            const select = document.getElementById('first-payment-date');
-            if (select) {
-                Array.from(select.options).forEach(opt => {
-                    if (opt.text.includes('(pedir autorização do Dark)')) {
-                        opt.setAttribute('data-original-text', opt.text);
-                        opt.text = opt.text.replace(' (pedir autorização do Dark)', '');
-                    }
-                });
-            }
-        });
-
-        window.addEventListener('afterprint', () => {
-            const select = document.getElementById('first-payment-date');
-            if (select) {
-                Array.from(select.options).forEach(opt => {
-                    if (opt.hasAttribute('data-original-text')) {
-                        opt.text = opt.getAttribute('data-original-text');
-                        opt.removeAttribute('data-original-text');
-                    }
-                });
-            }
-        });
+        // Lógica de ajuste do Dia do Vencimento ao alterar a data de compra
+        const monthlyPaymentDateSelect = document.getElementById('monthly-payment-date');
+        if (monthlyPaymentDateSelect) {
+            monthlyPaymentDateSelect.addEventListener('change', function() {
+                // Permite alterar o dia do vencimento, se necessário
+            });
+        }
     </script>
 </body>
 </html>
