@@ -532,6 +532,49 @@
     </div>
 
     <script>
+        // --- ADICIONE ESTE BLOCO NO FINAL DO SEU <SCRIPT> ---
+
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Mapeamento: 'parametro_na_url': 'id_do_campo_no_html'
+    const mapaCampos = {
+        'nome': 'buyer-name',
+        'cpf': 'cpf',
+        'celular': 'how-heard', // Opcional: coloquei na origem se quiser
+        'loja': 'purchase-location'
+    };
+
+    // Preenche os campos básicos
+    for (const [param, id] of Object.entries(mapaCampos)) {
+        const valor = urlParams.get(param);
+        const input = document.getElementById(id);
+        if (valor && input) {
+            input.value = valor;
+            // Dispara o evento de input para atualizar máscaras ou textos dinâmicos
+            input.dispatchEvent(new Event('input'));
+            input.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Se houver CPF, formata ele (seu código já tem a função de máscara no evento 'input')
+    const cpfInput = document.getElementById('cpf');
+    if (cpfInput && cpfInput.value) {
+        cpfInput.dispatchEvent(new Event('input'));
+    }
+
+    // Atualiza os textos de confirmação da Página 2
+    if (typeof updateConfirmationText === 'function') {
+        updateConfirmationText();
+    }
+
+    // Se houver Loja, dispara a lógica de mudar o telefone de suporte
+    const localSelect = document.getElementById('purchase-location');
+    if (localSelect && localSelect.value) {
+        localSelect.dispatchEvent(new Event('change'));
+    }
+});
+
         // Função para formatar a data
         function formatDate(dateInput) {
             let value = dateInput.value.replace(/\D/g, '');
