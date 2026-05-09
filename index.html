@@ -539,21 +539,28 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Mapeamento: 'parametro_na_url': 'id_do_campo_no_html'
     const mapaCampos = {
-        'nome': 'buyer-name',
+        nome': 'buyer-name',
         'cpf': 'cpf',
-        'celular': 'how-heard', // Opcional: coloquei na origem se quiser
-        'loja': 'purchase-location'
+        'nascimento': 'date-of-birth',
+        'loja': 'purchase-location',
+        'data_compra': 'date',
+        'marca': 'brand',
+        'modelo': 'model',
+        'ram_store': 'ram-storage',
+        'imei': 'imei',
+        'cor': 'color',
+        'entrada_valor': 'payment-entry',
+        'entrada_forma': 'payment-method'
     };
 
     // Preenche os campos básicos
-    for (const [param, id] of Object.entries(mapaCampos)) {
+    for (const [param, id] of Object.entries(mapa)) {
         const valor = urlParams.get(param);
         const input = document.getElementById(id);
         if (valor && input) {
             input.value = valor;
-            // Dispara o evento de input para atualizar máscaras ou textos dinâmicos
-            input.dispatchEvent(new Event('input'));
-            input.dispatchEvent(new Event('change'));
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 
