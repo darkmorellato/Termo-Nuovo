@@ -880,6 +880,61 @@
                 // Permite alterar o dia do vencimento, se necessário
             });
         }
+
+        // --- SCRIPT DE PREENCHIMENTO AUTOMÁTICO MIPLACE ---
+        function preencherTermoMiplace() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            const mapa = {
+                'nome': 'buyer-name',
+                'cpf': 'cpf',
+                'nascimento': 'date-of-birth',
+                'loja': 'purchase-location',
+                'data_compra': 'date',
+                'marca': 'brand',
+                'modelo': 'model',
+                'ram_store': 'ram-storage',
+                'imei': 'imei',
+                'cor': 'color',
+                'entrada_valor': 'payment-entry',
+                'entrada_forma': 'payment-method'
+            };
+
+            for (const [param, id] of Object.entries(mapa)) {
+                const valor = urlParams.get(param);
+                const input = document.getElementById(id);
+                
+                if (valor && input) {
+                    // Limpeza especial para campo de valor
+                    let valorTratado = valor;
+                    if (id === 'payment-entry') {
+                        // Se vier algo como "R$ 1.500,00", pegamos apenas números
+                        valorTratado = valor.replace(/\D/g, '');
+                    }
+
+                    input.value = valorTratado;
+
+                    // Força a execução dos scripts originais da página
+                    const eventos = ['input', 'change', 'keyup'];
+                    eventos.forEach(ev => {
+                        input.dispatchEvent(new Event(ev, { bubbles: true }));
+                    });
+                }
+            }
+
+            if (typeof updateConfirmationText === 'function') {
+                updateConfirmationText();
+            }
+            
+            if (purchaseLocationSelect) {
+                purchaseLocationSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        // Tenta preencher em diferentes momentos para garantir sucesso
+        window.addEventListener('DOMContentLoaded', preencherTermoMiplace);
+        setTimeout(preencherTermoMiplace, 300);
+        setTimeout(preencherTermoMiplace, 800);
     </script>
 </body>
 </html>
