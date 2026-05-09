@@ -532,37 +532,65 @@
     </div>
 
     <script>
-        // --- ADICIONE ESTE BLOCO NO FINAL DO SEU <SCRIPT> ---
+    // --- SCRIPT DE PREENCHIMENTO AUTOMÁTICO MIPLACE ---
+    function preencherTermoMiplace() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Mapeamento: 'nome_na_url': 'id_no_seu_html'
+        const mapa = {
+            'nome': 'buyer-name',
+            'cpf': 'cpf',
+            'nascimento': 'date-of-birth',
+            'loja': 'purchase-location',
+            'data_compra': 'date',
+            'marca': 'brand',
+            'modelo': 'model',
+            'ram_store': 'ram-storage',
+            'imei': 'imei',
+            'cor': 'color',
+            'entrada_valor': 'payment-entry',
+            'entrada_forma': 'payment-method'
+        };
 
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
+        for (const [param, id] of Object.entries(mapa)) {
+            const valor = urlParams.get(param);
+            const input = document.getElementById(id);
+            
+            if (valor && input) {
+                // Se for campo de valor (R$), removemos o prefixo se existir na URL
+                let valorTratado = valor;
+                if (id === 'payment-entry') {
+                    valorTratado = valor.replace('R$', '').trim().replace('.', '').replace(',', '');
+                }
 
-    // Mapeamento: 'parametro_na_url': 'id_do_campo_no_html'
-    const mapaCampos = {
-        nome': 'buyer-name',
-        'cpf': 'cpf',
-        'nascimento': 'date-of-birth',
-        'loja': 'purchase-location',
-        'data_compra': 'date',
-        'marca': 'brand',
-        'modelo': 'model',
-        'ram_store': 'ram-storage',
-        'imei': 'imei',
-        'cor': 'color',
-        'entrada_valor': 'payment-entry',
-        'entrada_forma': 'payment-method'
-    };
+                input.value = valorTratado;
 
-    // Preenche os campos básicos
-    for (const [param, id] of Object.entries(mapa)) {
-        const valor = urlParams.get(param);
-        const input = document.getElementById(id);
-        if (valor && input) {
-            input.value = valor;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
+                // Dispara todos os eventos necessários para ativar suas máscaras e validações
+                const eventos = ['input', 'change', 'keyup', 'blur'];
+                eventos.forEach(ev => {
+                    input.dispatchEvent(new Event(ev, { bubbles: true }));
+                });
+            }
+        }
+
+        // Atualiza especificamente os nomes que aparecem na segunda página do seu termo
+        if (typeof updateConfirmationText === 'function') {
+            updateConfirmationText();
+        }
+        
+        // Atualiza o local da compra para que o telefone no rodapé mude
+        const localSelect = document.getElementById('purchase-location');
+        if (localSelect && localSelect.value) {
+            localSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
+
+    // Executa assim que o HTML carregar
+    window.addEventListener('DOMContentLoaded', preencherTermoMiplace);
+    
+    // Executa uma segunda vez após 500ms (garantia para scripts de terceiros/máscaras)
+    setTimeout(preencherTermoMiplace, 500);
+
 
     // Se houver CPF, formata ele (seu código já tem a função de máscara no evento 'input')
     const cpfInput = document.getElementById('cpf');
